@@ -1,0 +1,32 @@
+name: Daily GTF Zone Scan
+on:
+  schedule:
+    - cron: '0 16 * * 1-5'
+  workflow_dispatch:
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+      - name: Create reports dir
+        run: mkdir -p reports
+      - name: Run scanner
+        run: python scanner.py
+        env:
+          PYTHONUNBUFFERED: 1
+      - uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "auto: daily GTF zone scan"
+          file_pattern: 'reports/*.csv'
+          commit_user_name: 'GTF Scanner Bot'
+          commit_user_email: 'bot@users.noreply.github.com'
