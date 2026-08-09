@@ -93,6 +93,7 @@ th{padding:12px 14px;text-align:left;font-size:11px;color:var(--text2);text-tran
 td{padding:11px 14px;border-bottom:1px solid var(--border2);white-space:nowrap}
 tr:hover td{background:var(--bg3)}
 .sym{font-weight:700;font-size:13px}
+.sym a:hover{text-decoration:underline !important;color:var(--cyan) !important}
 .comp{color:var(--text2);font-size:12px;max-width:200px;overflow:hidden;text-overflow:ellipsis}
 .sector-badge{display:inline-block;padding:2px 8px;border-radius:4px;font-size:10px;font-weight:600;text-transform:uppercase;background:var(--bg4);color:var(--text2);border:1px solid var(--border)}
 .idx-nifty50{background:rgba(239,68,68,.12);color:#f87171;border-color:rgba(239,68,68,.2)}
@@ -212,10 +213,24 @@ const N100=new Set(["UPL","VEDL","DABUR","PIDILITIND","SIEMENS","GODREJCP","DMAR
 
 function primIdx(s){s=s.toUpperCase().replace('.NS','');if(N50.has(s))return"NIFTY50";if(BN.has(s))return"BANKNIFTY";if(NIT.has(s))return"NIFTYIT";if(N100.has(s))return"NIFTY100";return"NIFTYMID"}
 function idxCls(i){return{"NIFTY50":"idx-nifty50","NIFTY100":"idx-nifty100","NIFTYMID":"idx-niftymid","BANKNIFTY":"idx-banknifty","NIFTYIT":"idx-niftyit"}[i]||"idx-niftysmall"}
-function doLogin(){if(document.getElementById('pwd').value===PASSWORD){localStorage.setItem('gtf_auth','1');document.getElementById('login').style.display='none';document.getElementById('app').style.display='block';init()}else{document.getElementById('loginErr').style.display='block'}}
+function doLogin(){
+  if(document.getElementById('pwd').value===PASSWORD){
+    sessionStorage.setItem('gtf_auth','1');
+    document.getElementById('login').style.display='none';
+    document.getElementById('app').style.display='block';
+    document.getElementById('pwd').value='';
+    init();
+  }else{
+    document.getElementById('loginErr').style.display='block';
+    document.getElementById('pwd').value='';
+  }
+}
 document.getElementById('pwd').addEventListener('keypress',e=>{if(e.key==='Enter')doLogin()});
-function logout(){localStorage.removeItem('gtf_auth');location.reload()}
-if(localStorage.getItem('gtf_auth')==='1'){document.getElementById('login').style.display='none';document.getElementById('app').style.display='block'}
+function logout(){sessionStorage.removeItem('gtf_auth');location.reload()}
+if(sessionStorage.getItem('gtf_auth')==='1'){
+  document.getElementById('login').style.display='none';
+  document.getElementById('app').style.display='block';
+}
 
 // Embedded Nifty 500 stock data for guaranteed display
 const STOCKS=[
@@ -269,12 +284,12 @@ function genData(){
     const isD=rnd(0,1)<0.55;
     const ty=isD?"DEMAND":"SUPPLY";
     let price;
-    const fp=(sym.charCodeAt(0)+sym.length)%9;
-    if(fp<2)price=rnd(40,150);
-    else if(fp<4)price=rnd(150,600);
-    else if(fp<6)price=rnd(500,2000);
-    else if(fp<8)price=rnd(80,500);
-    else price=rnd(1000,4000);
+    const fp=((sym.charCodeAt(0)+sym.length+idx)%9);
+    if(fp<2)price=rnd(100,400);
+    else if(fp<4)price=rnd(200,800);
+    else if(fp<6)price=rnd(500,2500);
+    else if(fp<8)price=rnd(150,900);
+    else price=rnd(800,3500);
     price=Math.round(price*100)/100;
     const age=Math.floor(rnd(1,18));
     const formed=MONTHS[Math.max(0,MONTHS.length-age)]||"2025-01";
@@ -404,10 +419,10 @@ function renderTable(){
   if(f.length===0){tb.innerHTML=`<tr><td colspan="15" style="text-align:center;padding:40px;color:var(--text3)">📭 Koi stock match nahi kar raha</td></tr>`}
   else{
     tb.innerHTML=f.map(x=>{
-      const u=`https://in.tradingview.com/chart?symbol=NSE:${x.rawSym}`;
+      const u=`https://in.tradingview.com/chart/?symbol=NSE:${encodeURIComponent(x.rawSym)}`;
       const gc=x.gap>0.1?'gap-pos':x.gap<-0.1?'gap-neg':'gap-zero';
       const sc=x.status==='IN ZONE'?'b-inzone':x.status==='NEAR'?'b-near':'b-swept';
-      return`<tr><td class="sym">${x.sym}</td><td class="comp">${x.comp}</td><td><span class="badge ${idxCls(x.index)}">${x.index}</span></td><td><span class="sector-badge">${x.sector}</span></td><td><span class="badge ${x.type==='DEMAND'?'b-demand':'b-supply'}">${x.type}</span></td><td><span class="badge ${sc}">${x.status}</span></td><td style="color:var(--text2);font-size:12px">${x.formed}</td><td class="age-badge">${x.age}</td><td style="font-weight:600">₹${x.ltp.toFixed(2)}</td><td style="color:var(--${x.type==='DEMAND'?'demand':'supply'})">₹${x.ztop.toFixed(2)}</td><td style="color:var(--${x.type==='DEMAND'?'demand':'supply'})">₹${x.zbot.toFixed(2)}</td><td class="gap-pct ${gc}">${x.gap>0?'+':''}${x.gap.toFixed(2)}%</td><td class="score ${x.scoreClass}">${x.score.toFixed(1)}</td><td><span class="signal ${x.sigClass}">${x.signal}</span></td><td><a class="chart-link" href="${u}" target="_blank">📈</a></td></tr>`
+      return`<tr><td class="sym"><a href="${u}" target="_blank" rel="noopener" style="color:inherit;text-decoration:none;cursor:pointer" title="TradingView mein chart kholne ke liye click karein">${x.sym}</a></td><td class="comp">${x.comp}</td><td><span class="badge ${idxCls(x.index)}">${x.index}</span></td><td><span class="sector-badge">${x.sector}</span></td><td><span class="badge ${x.type==='DEMAND'?'b-demand':'b-supply'}">${x.type}</span></td><td><span class="badge ${sc}">${x.status}</span></td><td style="color:var(--text2);font-size:12px">${x.formed}</td><td class="age-badge">${x.age}</td><td style="font-weight:600">₹${x.ltp.toFixed(2)}</td><td style="color:var(--${x.type==='DEMAND'?'demand':'supply'})">₹${x.ztop.toFixed(2)}</td><td style="color:var(--${x.type==='DEMAND'?'demand':'supply'})">₹${x.zbot.toFixed(2)}</td><td class="gap-pct ${gc}">${x.gap>0?'+':''}${x.gap.toFixed(2)}%</td><td class="score ${x.scoreClass}">${x.score.toFixed(1)}</td><td><span class="signal ${x.sigClass}">${x.signal}</span></td><td><a class="chart-link" href="${u}" target="_blank" rel="noopener" title="TradingView chart">📈</a></td></tr>`
     }).join('');
   }
   document.getElementById('rowsInfo').textContent=`${f.length} / ${ALL_DATA.length} rows`;
